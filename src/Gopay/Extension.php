@@ -46,8 +46,36 @@ class Extension extends CompilerExtension
 				$driver,
 				$config['gopayId'],
 				$config['gopaySecretKey'],
+				$config['clientId'],
+				$config['clientSecret'],
 				isset($config['testMode']) ? $config['testMode'] : FALSE
 			));
+
+		$serviceRestApi = $container->addDefinition($this->prefix('serviceRestApi'))
+			->setClass('Markette\Gopay\ServiceRestApi', array(
+				$driver,
+				$config['gopayId'],
+				$config['gopaySecretKey'],
+				$config['clientId'],
+				$config['clientSecret'],
+				isset($config['testMode']) ? $config['testMode'] : FALSE
+			));
+
+		if (isset($config['channels'])) {
+			$constants = ClassType::from('Markette\Gopay\Service');
+			foreach ($config['channels'] as $code => $channel) {
+				$constChannel = 'METHOD_' . strtoupper($code);
+				if ($constants->hasConstant($constChannel)) {
+					$code = $constants->getConstant($constChannel);
+				}
+				if (is_array($channel)) {
+					$channel['code'] = $code;
+					$serviceRestApi->addSetup('addChannel', $channel);
+				} else if (is_scalar($channel)) {
+					$serviceRestApi->addSetup('addChannel', array($code, $channel));
+				}
+			}
+		}
 
 		if (isset($config['channels'])) {
 			$constants = ClassType::from('Markette\Gopay\Service');
